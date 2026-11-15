@@ -29,4 +29,8 @@ EXPOSE 8000
 # ALLOW_NON_SANDBOX=true is explicitly set by the operator.
 # Migrations run on boot (idempotent) so a fresh Postgres volume gets the
 # 9 canonical tables before the API binds its port.
-CMD ["sh", "-c", "alembic upgrade head && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+# ENTRYPOINT (not CMD) makes the boot sequence immune to a platform-level
+# "Docker Command" override: any injected argv lands as ignored positional
+# params of `sh -c` instead of replacing the migration+server invocation.
+ENTRYPOINT ["sh", "-c", "alembic upgrade head && exec python -m uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+CMD []
