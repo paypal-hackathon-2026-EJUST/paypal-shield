@@ -10,9 +10,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt \
+    && chown 1000:1000 /app
 
-COPY app ./app
+# uid 1000 owns the code and the workdir so runtime writes (uploads, caches)
+# succeed while everything still installs as root.
+COPY --chown=1000:1000 app ./app
 
 # Drop to non-root before declaring the entrypoint (USER must precede CMD/EXPOSE).
 # Sandbox guard: refuses to boot against a non-Sandbox PayPal base URL unless
