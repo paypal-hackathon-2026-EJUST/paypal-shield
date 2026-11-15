@@ -10,9 +10,16 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt \
+    && chown 1000:1000 /app
 
-COPY app ./app
+# uid 1000 owns the code and the workdir so runtime writes (uploads, caches)
+# succeed while everything still installs as root.
+COPY --chown=1000:1000 app ./app
+# alembic.ini sits at the image workdir root so migrations can be invoked
+# flag-free (`alembic upgrade head`) from CWD=/app - no fragile -c paths in
+# boot commands or platform pre-deploy hooks.
+COPY --chown=1000:1000 app/db/alembic.ini ./alembic.ini
 
 USER 1000
 
@@ -21,6 +28,5 @@ EXPOSE 8000
 # Sandbox guard: refuses to boot against a non-Sandbox PayPal base URL unless
 # ALLOW_NON_SANDBOX=true is explicitly set by the operator.
 # Migrations run on boot (idempotent) so a fresh Postgres volume gets the
-# 9 canonical tables without an extra init container; Render's preDeploy
-# runs them first as well, so this is a no-op there.
-CMD ["sh", "-c", "alembic -c app/db/alembic.ini upgrade head && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+# 9 canonical tables before the API binds its port.
+CMD ["sh", "-c", "alembic upgrade head && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000"]
