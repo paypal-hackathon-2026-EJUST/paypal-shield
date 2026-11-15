@@ -13,7 +13,9 @@ services:
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    preDeployCommand: alembic -c app/db/alembic.ini upgrade head
+    # Migrations run inside the container CMD before uvicorn binds, so no
+    # pre-deploy hook is needed (Render's pre-deploy exec mangles multi-token
+    # commands - "alembic: error: too few arguments").
     healthCheckPath: /api/v1/health
     autoDeployTrigger: commit
     envVars:
