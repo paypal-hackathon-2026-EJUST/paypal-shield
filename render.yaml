@@ -13,7 +13,7 @@ services:
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    preDeployCommand: alembic upgrade head
+    preDeployCommand: alembic -c app/db/alembic.ini upgrade head
     healthCheckPath: /api/v1/health
     autoDeployTrigger: commit
     envVars:
@@ -39,8 +39,6 @@ services:
         sync: false
       - key: PAYPAL_WEBHOOK_ID
         sync: false
-      - key: ALEMBIC_CONFIG
-        value: app/db/alembic.ini
 
   - type: web
     name: shield-storefront
